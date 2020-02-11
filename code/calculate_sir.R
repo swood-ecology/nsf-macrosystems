@@ -9,7 +9,7 @@ setwd("~/Box Sync/Work/The Nature Conservancy/NSF Macrosystems/calculated-data")
 # Calculate standard values for all places with standards
 not_any_na <- function(x) all(!is.na(x))
 
-sir[is.na(sir$number.stds)==FALSE,] -> stds
+sir[is.na(sir$std.value.1)==FALSE,] -> stds
 stds %>% add_column(meanStandard='NA') -> stds
 
 for(i in 1:nrow(stds)-1){
@@ -39,10 +39,10 @@ sir %>%
     molesCO2 = (volumeCO2/22.414)*273.15/293.15,                         # mol
     CO2C = molesCO2*12.011,                                              # g
     CO2CperHour = CO2C/incubationTime                                    # g h-1
-  ) %>% select(-number.stds:-std.value.4) %>%
+  ) %>% select(-std.value.1:-std.value.4) %>%
   write.csv("sir_calcs.csv")
 
-aggregate(CO2CperHour ~ unique.id + site + plot,
+aggregate(CO2CperHour ~ unique.id,
           data =
             sir %>% mutate(
               incubationTime = as.numeric((time.sampled - time.flushed)/3600),
@@ -53,7 +53,7 @@ aggregate(CO2CperHour ~ unique.id + site + plot,
               molesCO2 = (volumeCO2/22.414)*273.15/293.15,
               CO2C = molesCO2*12.011,
               CO2CperHour = CO2C/incubationTime 
-            ) %>% select(-number.stds:-std.value.4),
+            ) %>% select(-std.value.1:-std.value.4),
           FUN = mean
 ) %>%
   write.csv("sir_calcs_aggregated.csv")
