@@ -41,13 +41,13 @@ We follow the principles of "tidy data" as established by Hadley Wickham (Wickha
 
 In addition to these basic tidy principles from Hadley Wickham, I will add two others:
 
-### 4a. Calculations done with code.
+#### 4a. Calculations done with code.
 Raw data should be entered and stored in raw data spreadsheets, but calculated data should be calculated using code and stored in separate spreadsheets generated from the code. This will likely seem to be the most unfamiliar to biogeochemists in part because raw data for one assay can depend on calculated data from previous assays. There will be some adjustment to having to generate raw data, run a script to calculate new data and generate a new file, and then use those new data to start the new assay. However, we feel that the benefits of this approach are worth it. There are two main advantages: 1) it helps cut down on cluttered data files with many columns of subsequent calculations; 2) it helps cut down on human error in generating calculations; 3) it allows you to generate many calculations (through code) that you wouldn\'92t necessarily want to create as separate columns in a spreadsheet, for instance looking at the difference between moisture content at 50 vs 65 vs 75 percent water holding capacity.
 
-### 4b. Single file, single tab
+#### 4b. Single file, single tab
 Do not create Excel files with multiple tabs. Each spreadsheet should be saved as a .csv, so it can be read across platforms. Multiple tabs from excel files should be stored as separate files.
 
-### 4c. Unique IDs connect multiple files.
+#### 4c. Unique IDs connect multiple files.
 Every sample should have a unique ID code. This should be a code that refers to both the project and where the sample is from within the project. This makes it much simpler to merge data sets then having multiple variables that uniquely define an observation.
 
 
