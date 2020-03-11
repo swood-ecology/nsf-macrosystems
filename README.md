@@ -4,7 +4,7 @@
 The overall file structure for this project is as follows:
 
 #### metadata
-This folder contains all of the site-level metadata, such as plot- and site-level information. It also contains metadata files for each of the separate assays used.\
+This folder contains all of the site-level metadata, such as plot- and site-level information. It also contains metadata files for each of the separate assays used.
 
 #### raw data
 The raw data folder includes raw data for original field data, lab experiment data, and non-original primary data, like existing NEON data. Each of these three types of data should be in different folders.
@@ -29,7 +29,6 @@ For example, soil-sir_march-3-2020.csv includes substrate induced respiration da
 
 Also, for example, litter-mass_march-3-2020.csv could have the litter mass data from NEON accessed on March 3, 2020. Note, that there may be cases where the raw data from different NEON sites may have different structures and be incompatible. In that case, the raw data files should be separate by site and the file names should reflect that: litter-mass_HARV_march-3-2020.csv
 
-
 ## Spreadsheet organization
 We follow the principles of "tidy data" as established by Hadley Wickham (Wickham 2014 J Stat Soft). I strongly recommend reading this paper as a starting point. The foundational principle of tidy data is that variables should always be in columns and observations in rows. Relatedly, the following problems should be avoided:
 
@@ -50,7 +49,6 @@ Do not create Excel files with multiple tabs. Each spreadsheet should be saved a
 #### Unique IDs connect multiple files.
 Every sample should have a unique ID code. This should be a code that refers to both the project and where the sample is from within the project. This makes it much simpler to merge data sets then having multiple variables that uniquely define an observation.
 
-
 ## Variable and file naming
 Following from above, variables should always have names that are not numeric values. To make variable names standardized and clear, we use the following variable naming system:
 
@@ -63,12 +61,10 @@ Variables that are calculated from raw data should be named without punctuation 
 ### File naming
 Data sets and files stored in a file structure should be named with underscores instead of spaces. For instance, soil_properties instead of 'soil properties.' In addition, variable and file names should always be descriptive, and informative, while as short as possible.
 
-
 ## Variable units and metadata
 The units of the variables in a raw data set should NOT be added to the end of a variable name, nor should they be added in a separate row below the variable name. For each spreadsheet with raw data, there should be a supplementary meta-dataset that includes units. This meta-dataset should have the same name as the raw data set with metadata added to the end of the title. For instance, soil_properties_metadata. This file should be stored in a separate metadata folder. Any other metadata should also be added into this file, such as notes from the assay.
 
 The units of calculated data should be clearly documented in code, but not stored in the calculated data file. If you wish you can generate a metadata file for calculated data but this isn't strictly necessary if the units and other metadata information are clearly documented within the code.
-
 
 ## GitHub
 We will not be making any of the data--raw or processed--publicly available until published. The data should be stored in the Dropbox folder, which should be synced to your local desktop. Manipulations to data should not be done through Dropbox's online tools.
@@ -79,11 +75,8 @@ If you are unfamiliar working with git and GitHub, here is a link to a useful on
 
 The basic principle is that we will be using this resource to share code across the institutional partners (Yale, TNC, NCAR). We recommend creating separate branches for intermediate activities, such as NCAR's exploration of new code structure.
 
-
 ## Using processing code
 For each lab assay, there is a separate processing script. This script, by default, reads in all of the existing raw files and compiles them to two outputs: one is data aggregated by replicate and one that is not aggregated. To generate the calculated code, you should open the R file associated with the assay that you are looking to do calculations for and execute all of that code.
 
-
 ## References
-
 [Wickham, H. 2014. Tidy Data. Journal of Statistical Software 59 (10)](https://www.jstatsoft.org/article/view/v059i10)
