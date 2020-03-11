@@ -3,3 +3,4 @@ calculated-data/
 administration/
 literature-and-protocols/
 *.docx
+*.DS_Store
