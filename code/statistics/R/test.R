@@ -65,7 +65,7 @@ e.dat <- list(
   N = 10,
   y = data.typical$y,
   x_meas = data.typical$x,
-  tau = 0.1
+  tau = 0.5
 )
 
 # Run model
