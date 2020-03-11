@@ -3,16 +3,16 @@
 ## 1. Overall file structure
 The overall file structure for this project is as follows:
 
-####metadata
+#### metadata
 This folder contains all of the site-level metadata, such as plot- and site-level information. It also contains metadata files for each of the separate assays used.\
 
-####raw data
+#### raw data
 The raw data folder includes raw data for original field data, lab experiment data, and non-original primary data, like existing NEON data. Each of these three types of data should be in different folders.
 
-####code
+#### code
 The code folder includes separate code folders for data processing, statistical model code, and process model code. The data processing code is used to process the raw data files.
 
-####calculated data
+#### calculated data
 The calculated data folder contains the data for statistical and modeling analysis that is exported from the data processing scripts in the code folder.
 
 There is also a file in the parent folder that describes which files should be uploaded to GitHub. We are only uploading code and metadata too GitHub.
@@ -33,29 +33,35 @@ Also, for example, litter-mass_march-3-2020.csv could have the litter mass data 
 ## 4. Spreadsheet organization
 We follow the principles of "tidy data" as established by Hadley Wickham (Wickham 2014 J Stat Soft). I strongly recommend reading this paper as a starting point. The foundational principle of tidy data is that variables should always be in columns and observations in rows. Relatedly, the following problems should be avoided:
 
-#### -Column headers are values, not variable names
-#### -Multiple variables are stored in one column
-#### -Variables are stored in both rows and columns
-#### -Multiple types of observational units are stored in the same table
-#### -A single observational unit is stored in multiple tables
+#### Column headers are values, not variable names
+#### Multiple variables are stored in one column
+#### Variables are stored in both rows and columns
+#### Multiple types of observational units are stored in the same table
+#### A single observational unit is stored in multiple tables
 
 In addition to these basic tidy principles from Hadley Wickham, I will add two others:
 
-### 4a. Raw data should be entered and stored in raw data spreadsheets, but calculated data should be calculated using code and stored in separate spreadsheets generated from the code. This will likely seem to be the most unfamiliar to biogeochemists in part because raw data for one assay can depend on calculated data from previous assays. There will be some adjustment to having to generate raw data, run a script to calculate new data and generate a new file, and then use those new data to start the new assay. However, we feel that the benefits of this approach are worth it. There are two main advantages: 1) it helps cut down on cluttered data files with many columns of subsequent calculations; 2) it helps cut down on human error in generating calculations; 3) it allows you to generate many calculations (through code) that you wouldn\'92t necessarily want to create as separate columns in a spreadsheet, for instance looking at the difference between moisture content at 50 vs 65 vs 75 percent water holding capacity.
+### 4a. Calculations done with code.
+Raw data should be entered and stored in raw data spreadsheets, but calculated data should be calculated using code and stored in separate spreadsheets generated from the code. This will likely seem to be the most unfamiliar to biogeochemists in part because raw data for one assay can depend on calculated data from previous assays. There will be some adjustment to having to generate raw data, run a script to calculate new data and generate a new file, and then use those new data to start the new assay. However, we feel that the benefits of this approach are worth it. There are two main advantages: 1) it helps cut down on cluttered data files with many columns of subsequent calculations; 2) it helps cut down on human error in generating calculations; 3) it allows you to generate many calculations (through code) that you wouldn\'92t necessarily want to create as separate columns in a spreadsheet, for instance looking at the difference between moisture content at 50 vs 65 vs 75 percent water holding capacity.
 
-### 4b. Do not create Excel files with multiple tabs. Each spreadsheet should be saved as a .csv, so it can be read across platforms. Multiple tabs from excel files should be stored as separate files.
+### 4b. Single file, single tab
+Do not create Excel files with multiple tabs. Each spreadsheet should be saved as a .csv, so it can be read across platforms. Multiple tabs from excel files should be stored as separate files.
 
-### 4c. Every sample should have a unique ID code. This should be a code that refers to both the project and where the sample is from within the project. This makes it much simpler to merge data sets then having multiple variables that uniquely define an observation.
+### 4c. Unique IDs connect multiple files.
+Every sample should have a unique ID code. This should be a code that refers to both the project and where the sample is from within the project. This makes it much simpler to merge data sets then having multiple variables that uniquely define an observation.
 
 
 ## 5. Variable and file naming
 Following from above, variables should always have names that are not numeric values. To make variable names standardized and clear, we use the following variable naming system:
 
-### 5a. Variables that are raw, entered data should be named with dots instead of spaces. For instance, tin.mass instead of "tin mass"
-### 5b. Variables that are calculated from raw data should be named without punctuation and capitalization used to clarify new words. For instance, gravimetric moisture instead of "gravimetric moisture"
-### 5c. Data sets and files stored in a file structure should be named with underscores instead of spaces. For instance, soil_properties instead of 'soil properties.'
+### 5a. No spaces in names.
+Variables that are raw, entered data should be named with dots instead of spaces. For instance, tin.mass instead of "tin mass"
 
-In addition, variable and file names should always be descriptive, and informative, while as short as possible.
+### 5b. Clarify raw vs calculated variables.
+Variables that are calculated from raw data should be named without punctuation and capitalization used to clarify new words. For instance, gravimetricMoisture instead of "gravimetric moisture"
+
+### 5c. File naming
+Data sets and files stored in a file structure should be named with underscores instead of spaces. For instance, soil_properties instead of 'soil properties.' In addition, variable and file names should always be descriptive, and informative, while as short as possible.
 
 
 ## 6. Variable units and metadata
