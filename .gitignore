@@ -6,3 +6,4 @@ literature-and-protocols/
 .DS_Store
 code/.DS_Store
 "Icon\r"
+*.Rhistory
