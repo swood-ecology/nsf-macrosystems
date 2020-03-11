@@ -1,6 +1,6 @@
 # DATA MANAGEMENT SYSTEM
 
-## 1. Overall file structure
+## Overall file structure
 The overall file structure for this project is as follows:
 
 #### metadata
@@ -17,10 +17,10 @@ The calculated data folder contains the data for statistical and modeling analys
 
 There is also a file in the parent folder that describes which files should be uploaded to GitHub. We are only uploading code and metadata too GitHub.
 
-## 2. How to decide what should be a separate raw data file?
+## How to decide what should be a separate raw data file?
 Within the raw data folder, different assays should never be in the same file (see Spreadsheet organization). In addition, there should be separate .csv files for every "run"" of an assay. A "run" is defined as a contiguous unit of time in which you are working on an assay. For instance, if you run substrate-induced respiration in the morning, work on something else for a while, and then run another batch in the afternoon, those should be entered as separate files.
 
-## 3. File naming
+## File naming
 For raw data, files should follow the following naming convention:
 
 assay-or-data-type_date-collected.csv
@@ -30,7 +30,7 @@ For example, soil-sir_march-3-2020.csv includes substrate induced respiration da
 Also, for example, litter-mass_march-3-2020.csv could have the litter mass data from NEON accessed on March 3, 2020. Note, that there may be cases where the raw data from different NEON sites may have different structures and be incompatible. In that case, the raw data files should be separate by site and the file names should reflect that: litter-mass_HARV_march-3-2020.csv
 
 
-## 4. Spreadsheet organization
+## Spreadsheet organization
 We follow the principles of "tidy data" as established by Hadley Wickham (Wickham 2014 J Stat Soft). I strongly recommend reading this paper as a starting point. The foundational principle of tidy data is that variables should always be in columns and observations in rows. Relatedly, the following problems should be avoided:
 
 #### Column headers are values, not variable names
@@ -51,7 +51,7 @@ Do not create Excel files with multiple tabs. Each spreadsheet should be saved a
 Every sample should have a unique ID code. This should be a code that refers to both the project and where the sample is from within the project. This makes it much simpler to merge data sets then having multiple variables that uniquely define an observation.
 
 
-## 5. Variable and file naming
+## Variable and file naming
 Following from above, variables should always have names that are not numeric values. To make variable names standardized and clear, we use the following variable naming system:
 
 ### No spaces in names.
@@ -64,13 +64,13 @@ Variables that are calculated from raw data should be named without punctuation 
 Data sets and files stored in a file structure should be named with underscores instead of spaces. For instance, soil_properties instead of 'soil properties.' In addition, variable and file names should always be descriptive, and informative, while as short as possible.
 
 
-## 6. Variable units and metadata
+## Variable units and metadata
 The units of the variables in a raw data set should NOT be added to the end of a variable name, nor should they be added in a separate row below the variable name. For each spreadsheet with raw data, there should be a supplementary meta-dataset that includes units. This meta-dataset should have the same name as the raw data set with metadata added to the end of the title. For instance, soil_properties_metadata. This file should be stored in a separate metadata folder. Any other metadata should also be added into this file, such as notes from the assay.
 
 The units of calculated data should be clearly documented in code, but not stored in the calculated data file. If you wish you can generate a metadata file for calculated data but this isn't strictly necessary if the units and other metadata information are clearly documented within the code.
 
 
-## 7. GitHub
+## GitHub
 We will not be making any of the data--raw or processed--publicly available until published. The data should be stored in the Dropbox folder, which should be synced to your local desktop. Manipulations to data should not be done through Dropbox's online tools.
 
 To avoid publishing data to GitHub, I have created a .gitignore file. This file describes which folders and files are ignored by GitHub.
@@ -80,7 +80,7 @@ If you are unfamiliar working with git and GitHub, here is a link to a useful on
 The basic principle is that we will be using this resource to share code across the institutional partners (Yale, TNC, NCAR). We recommend creating separate branches for intermediate activities, such as NCAR's exploration of new code structure.
 
 
-## 8. Using processing code
+## Using processing code
 For each lab assay, there is a separate processing script. This script, by default, reads in all of the existing raw files and compiles them to two outputs: one is data aggregated by replicate and one that is not aggregated. To generate the calculated code, you should open the R file associated with the assay that you are looking to do calculations for and execute all of that code.
 
 
