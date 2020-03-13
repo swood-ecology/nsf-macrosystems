@@ -23,9 +23,9 @@ Within the raw data folder, different assays should never be in the same file (s
 ## File naming
 For raw data, files should follow the following naming convention:
 
-assay-or-data-type_date-collected.csv
+assay-or-data-type_sampling-round_date-collected.csv
 
-For example, soil-sir_march-3-2020.csv includes substrate induced respiration data measured on March 3, 2020. Note that the date should not refer to the date the samples are collected. That information should be in the sample meta-data folder associated with each sample's unique id.
+For example, soil-sir_prelim-2_march-3-2020.csv includes substrate induced respiration data measured on March 3, 2020 for the second sampling of the preliminary work. Note that the date should not refer to the date the samples are collected. That information should be in the sample meta-data folder associated with each sample's unique id.
 
 Also, for example, litter-mass_march-3-2020.csv could have the litter mass data from NEON accessed on March 3, 2020. Note, that there may be cases where the raw data from different NEON sites may have different structures and be incompatible. In that case, the raw data files should be separate by site and the file names should reflect that: litter-mass_HARV_march-3-2020.csv
 
