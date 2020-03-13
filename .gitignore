@@ -1,6 +1,6 @@
 raw-data/
 calculated-data/
-administration/
+project-management/
 literature-and-protocols/
 *.docx
 .DS_Store
