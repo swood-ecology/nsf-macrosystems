@@ -1,7 +1,7 @@
 library(tidyverse)
 
 # Read in raw data
-sir <- read_csv("~/Box Sync/Work/The Nature Conservancy/NSF Macrosystems/raw-data/substrate_induced_respiration.csv")
+sir <- read_csv("~/Box Sync/Work/The Nature Conservancy/NSF Macrosystems/raw-data/field-experiment/substrate_induced_respiration.csv")
 
 # Set directory to calculated data folder
 setwd("~/Box Sync/Work/The Nature Conservancy/NSF Macrosystems/calculated-data")
@@ -21,7 +21,7 @@ for(i in 1:nrow(stds)-1){
     ) %>%
     summarize(mean = mean(value)) -> stds[(i+1),'meanStandard']
 }
-stds$meanStandard[1] <- stds$meanStandard[2]
+#stds$meanStandard[1] <- stds$meanStandard[2]
 stds$meanStandard <- as.numeric(stds$meanStandard)
 stds <- stds %>% select(unique.id,meanStandard)
   
