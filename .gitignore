@@ -1,2 +1,9 @@
 raw-data/
 calculated-data/
+project-management/
+literature-and-protocols/
+*.docx
+.DS_Store
+code/.DS_Store
+"Icon\r"
+*.Rhistory
