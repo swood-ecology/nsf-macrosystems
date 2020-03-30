@@ -1,3 +1,4 @@
+lab-experiment/
 raw-data/
 calculated-data/
 project-management/
@@ -7,3 +8,4 @@ literature-and-protocols/
 code/.DS_Store
 "Icon\r"
 *.Rhistory
+.Rproj.user
