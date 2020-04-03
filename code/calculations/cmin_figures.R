@@ -2,6 +2,8 @@
 
 library(plotrix)
 library(ggplot2)
+library(tidyverse)
+library(export)
 # Input some site data for plotting
 setwd("C:/Users/alexa/Dropbox (Yale_FES)/Macrosystems Biol Bradford Wieder Wood 2019-2024/")
 
@@ -25,6 +27,13 @@ left_join(cumulativeDataCalc, soilGWC, by = "unique.id") %>%
 ggplot(cumulativeCO2SiteData, aes(x = moist.trt, y = cumulativeCO2Flux, fill = moist.trt)) + 
   geom_boxplot(outlier.alpha = 0) + geom_point(position =position_jitterdodge(), alpha = .2)
 # graph2ppt(file="Cumulative CO2 flux by Moisture.pptx", width=7, height=5) 
+
+
+ggplot(cumulativeCO2SiteData, aes(x = moist.trt, y = cumulativeCO2Flux, fill = moist.trt)) + 
+  geom_boxplot(outlier.alpha = 0) + geom_point(position =position_jitterdodge(), alpha = .2) + facet_grid(.~species)
+
+
+
 
 # cumulative CO2 flux by quadrat GWC
 ggplot(cumulativeCO2SiteData, aes(x = moisturePercent, y = cumulativeCO2Flux, color = moist.trt)) + 
@@ -66,17 +75,81 @@ aggregateData$moist.trt <- factor(aggregateData$moist.trt, levels = c("35", "60"
 left_join(aggregateData, soilGWC, by = "unique.id") %>%
   left_join(., siteData, by = "unique.id") -> aggregateData
 
+# add a new unit with all values of zero 
+bind_rows(
+  aggregateData %>% 
+    filter(day == 2) %>%
+    mutate(
+      day=replace(day, day == 2, 0),
+      date= replace(date, day == 0, "2020-02-25"),
+      CO2CpergLitter=replace(CO2CpergLitter, day == 0, 0)
+    ),
+  aggregateData) -> aggregateData
+
+
+aggregateData %>% 
+  group_by(date, moist.trt) %>%
+  add_tally() -> test
+
 aggregateData %>% 
   group_by(date, moist.trt) %>%
   summarise(meanCO2 = mean(CO2CpergLitter),
-            std.err = std.error(CO2CpergLitter)) -> plotData
+            std.err = std.error(CO2CpergLitter),
+            sd = sd(CO2CpergLitter)) -> plotData
 
 
 p <- ggplot(plotData, aes(x = date, y = meanCO2))
+p + geom_line(data = plotData, aes(x = date, y = meanCO2, color = moist.trt), size = .5, alpha = 1) + 
+  geom_errorbar(data = plotData, aes(ymin=meanCO2-std.err, ymax=meanCO2+std.err),
+                width=.5) + ylim(0, 100) + theme_classic()
 
-p + geom_line(aes(color = moist.trt), size = .2) + 
-  geom_errorbar(aes(ymin=meanCO2-std.err, ymax=meanCO2+std.err), width=.1)
 
+
+
+
+
+j <- ggplot(aggregateData, aes(x = date, y = CO2CpergLitter, color = moist.trt))
+
+ggplot(aggregateData, aes(x = date, y = CO2CpergLitter, color = moist.trt))  +
+  geom_line(data = plotData, aes(x = date, y = meanCO2, color = moist.trt), size = .8, alpha = 1,
+            position = position_dodge(width = 1)) + 
+  geom_point(alpha = .6, position = position_dodge(width = 1), size = 1)  + 
+  geom_point(data = plotData, aes(x = date, y = meanCO2, fill = moist.trt), size = 3, alpha = 1,
+             shape = 0, position = position_dodge(width = 1)) +
+  ylab("ug CO2-C g-1 litter hr-1") + 
+  theme_classic()
+
+# try to seperate time point data into species too 
+aggregateData %>% 
+  group_by(date, species, moist.trt) %>%
+  summarise(meanCO2 = mean(CO2CpergLitter),
+            std.err = std.error(CO2CpergLitter),
+            sd = sd(CO2CpergLitter)) -> plotDataSpecies
+
+
+
+ggplot(aggregateData, aes(x = date, y = CO2CpergLitter, color = moist.trt))  +
+  geom_line(data = plotDataSpecies, aes(x = date, y = meanCO2, color = moist.trt), size = .8, alpha = 1,
+            position = position_dodge(width = 1)) +
+  geom_point(alpha = .6, position = position_dodge(width = 1), size = 1)  + 
+ 
+  ylab("ug CO2-C g-1 litter hr-1") + 
+  theme_classic() + facet_grid(.~species)
+
+
+# geom_errorbar(data = plotData, aes(ymin=meanCO2-std.err, ymax=meanCO2+std.err),
+#               width=.5, position = position_dodge(width = 1))
+
+graph2ppt("timeseries.pptx", width = 7, height = 5)
+
+?graph2ppt
+
+  
+p + geom_line(data = plotData, aes(x = date, y = meanCO2, color = moist.trt), size = .5, alpha = 1) + 
+  geom_errorbar(data = plotData, aes(ymin=meanCO2-std.err, ymax=meanCO2+std.err),
+                width=.5) + ylim(0, 100) + 
+  ylab("ug CO2-C g-1 litter hr-1") + 
+  theme_classic()
 
 
 

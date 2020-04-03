@@ -1,0 +1,352 @@
+---
+title: "PCA Examples"
+author: "JDRS"
+date: "January, 2020"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+###  Examples of PCA in R
+
+Handy libraries
+
+*   Nice graphical representations of correlations
+*   Learn more [here](https://cran.r-project.org/web/packages/corrplot/vignettes/corrplot-intro.html)
+
+
+```{r}
+library(corrplot)
+library(PerformanceAnalytics)
+```
+
+
+###  World Bank Data 2016
+
+
+```{r}
+#read in data from online location
+masterdata
+names(masterdata)
+
+#Get subset of data that is complete for relevant variables
+MSB <- masterdata[ ,c("Species", "DBH", "SoilGWC", "pH", "SIR", "Aspect", "Elevation", "Slope", "meanSoilT", "meanLitT", "meanSoilM")]
+MSB <- masterdata[masterdata$Site == "SCBI" ,c("Species", "DBH", "SoilGWC", "pH", "SIR", "Aspect", "Elevation", "Slope", "meanSoilT", "meanLitT", "meanSoilM")]
+
+#We need complete cases for code to work
+MSB <- MSB[complete.cases(MSB),]
+dim(MSB)
+
+```
+
+
+For starters, make correlation matrices and use visual representations.
+```{r}
+#make correlation matrix to see if PCA will work well - remove column of country names
+round(cor(MSB[, -1]), 2)
+
+#Cooler visual representation of correlations
+corrplot(cor(MSB[, -1]), method = "ellipse")
+
+#Cooler visual representation of correlations
+#Order option orders variables based on data order, alphabetically, results of cluster analysis, etc.
+#  See help file or link above to get details.
+
+corrplot(cor(MSB[,-1]),method = "ellipse", order="FPC")
+corrplot(cor(MSB[,-1]),method = "ellipse", order="AOE")
+corrplot(cor(MSB[,-1]),method = "ellipse", order="hclust")
+
+#Lots of options here - but my personal favorite
+corrplot.mixed(cor(MSB[,-1]), lower.col = "black", upper = "ellipse", tl.col = "black", number.cex = .7, order = "hclust", tl.pos = "lt", tl.cex = .7)
+```
+
+
+It's also important to check for linearity.
+```{r}
+#make matrix plot to check for linearity
+plot(MSB[,-1], pch=19, cex=.7, col='red', main="Matrix plot of WB raw data")
+
+#Here is a cool way to look for non-linearity, get correlation, make histograms all at once.
+chart.Correlation(MSB[, -1], histogram=TRUE, pch=19)
+
+```
+
+Let's see if data happens to have multivariate normal distribution (not required but handy for parallel analysis)
+
+```{r}
+#get online function
+source("http://www.reuningscherer.net/STAT660/R/CSQPlot.r.txt")
+
+#run the function
+CSQPlot(MSB[,-1],label="MSB SCBI Data")
+```
+
+Seems like transformed variables are closer to multivariate normal.  Let's get this data for reference.
+
+```{r}
+WBtrans <- WB[,c("Country","Rural","logGNI","logImports","logExports","Cell","Fertility16","InfMort","LifeExp","PM2.5","logCO2","Diesel","logEnergyUse")]
+WBtrans <- WBtrans[complete.cases(WBtrans),]
+
+#run the function
+CSQPlot(WBtrans[,-1],label="World Bank Data")
+
+```
+
+
+Here is correlation plot for transformed data
+
+```{r}
+corrplot.mixed(cor(WBtrans[,-1]), lower.col="black", upper = "ellipse", tl.col = "black", number.cex=.7, order = "hclust",
+               tl.pos = "lt", tl.cex=.7, main="Correlations for Transformed WB Data")
+```
+
+Check linearity with matrix plots
+
+```{r}
+#make matrix plot to check for linearity
+plot(WBtrans[,-1], pch=19, cex=.7, col='red', main="Matrix plot of WB transformed data")
+
+#Here is a cool way to look for non-linearity, get correlation, make histograms all at once.
+chart.Correlation(WBtrans[, -1], histogram=TRUE, pch=19)
+```
+
+
+
+
+
+
+####  RUN PCA ON RAW WB DATA
+
+NOTE : there are multiple funcions and packages that will perform PCA in R.
+
+There is a nice discussion [here](http://www.gastonsanchez.com/visually-enforced/how-to/2012/06/17/PCA-in-R/ )  
+
+Included in R are princomp() and prcomp()   (very similar)
+
+#####FIRST, use princomp()
+
+```{r}
+pc1 <- princomp(MSB[,-1], cor = TRUE)
+```
+
+
+Objects created : loadings are the eigenvectors, scores are, well, the scores, sdev is sqrt of eigenvalues!
+
+```{r}
+names(pc1)
+
+#print results
+print(summary(pc1), digits = 2, loadings = pc1$loadings, cutoff=0)
+```
+
+
+Get eigenvalues - NOTE that R stores the standard deviation for each PC, i.e. it has the square root of the eigenvalues!
+
+```{r}
+round(pc1$sdev^2,2)
+```
+
+Make a screeplot  
+
+
+```{r}
+screeplot(pc1,type="lines",col="red",lwd=2,pch=19,cex=1.2,main="Scree Plot of Raw WB Data")
+```
+
+Perform parallel analysis.  The code below includes a
+
+```{r}
+#get the function online
+source("http://www.reuningscherer.net/STAT660/R/parallel.r.txt")
+
+#make the parallel analysis plot using the parallelplot function
+parallelplot(pc1)
+```
+
+Make scoreplot with confidence ellipse as well as a biplot.
+
+```{r}
+#  c(1,2) specifies to use components 1 and 2
+#get function from online
+source("http://reuningscherer.net/stat660/r/ciscoreplot.R.txt")
+
+#run the function
+ciscoreplot(pc1,c(1,2),MSB[,1])
+
+#make a biplot for first two components
+biplot(pc1,choices=c(1,2),pc.biplot=T)
+
+
+```
+
+
+####SECOND, use PCA() function in FactoMineR on RAW World Bank Data
+
+You can learn about FactoMineR in this [video]?( https://www.youtube.com/watch?v=CTSbxU6KLbM&list=PLnZgp6epRBbTsZEFXi_p6W48HhNyqwxIu&index=3)
+
+```{r}
+library(FactoMineR)
+
+#Make rownames of MSB equal to country names
+rownames(MSB) <- MSB[,1]
+
+#The PCA function scales variables by default, and gives a scoreplot and a 'correlation' biplot.  Notice results are flipped vertically from results above.
+
+par(cex=.8, col="blue")
+pc2 <- PCA(MSB[,-1])
+dev.off()
+summary(pc2)
+
+#make a screeplot - oddly, not easy in this package . . .  
+#parallel analysis,etc, use princomp() or prcomp()
+
+```
+
+####  RUN PCA ON TRANSFORMED DATA
+
+
+```{r}
+pc1_trans <- princomp(WBtrans[,-1], cor=TRUE)
+
+#print results
+print(summary(pc1_trans),digits=2,loadings=pc1_trans$loadings,cutoff=0)
+
+#Get eigenvalues
+round(pc1_trans$sdev^2,2)
+
+#make a screeplot  
+screeplot(pc1_trans,type="lines",col="red",lwd=2,pch=19,cex=1.2,main="Scree Plot of Transformed WB Data")
+
+#perform parallel analysis
+#get the function online
+source("http://www.reuningscherer.net/STAT660/R/parallel.r.txt")
+
+#make the parallel analysis plot
+parallelplot(pc1_trans)
+
+#make scoreplot with confidence ellipse : 
+#  c(1,2) specifies to use components 1 and 2
+#get function from online
+source("http://reuningscherer.net/stat660/r/ciscoreplot.R.txt")
+
+#run the function
+ciscoreplot(pc1_trans,c(1,2),WBtrans[,1])
+
+#make a biplot for first two components
+biplot(pc1_trans,choices=c(1,2),pc.biplot=T)
+```
+
+
+##   Environmental Attitudes Data
+
+```{r}
+#get data : change path to wherever you have data.
+envatt <- read.delim("http://reuningscherer.net/stat660/data/EnvAttitudes.1974.txt",header=T,sep="\t")
+
+#Keep complete cases
+envatt <- na.omit(envatt)
+
+#Notice that a matrix plot to check for linearity is useless here
+plot(envatt, pch=19, cex=.7, col='red', main="Matrix plot of Env Attitude Data")
+
+#Here is correlation plot - correlations are a bit weak!
+corrplot.mixed(cor(envatt), lower.col="black", upper = "ellipse", tl.col = "black", number.cex=.7, order = "hclust",
+               tl.pos = "lt", tl.cex=.7, main="Correlations for Env Attitude Data")
+
+```
+
+Perform PCA
+
+```{r}
+#perform PCA
+pc3<-princomp(envatt[complete.cases(envatt),],cor=TRUE)
+
+#print results
+print(summary(pc3),digits=2,loadings=pc3$loadings,cutoff=0)
+
+#view eigenvalues (note that R gives square-root of eigenvalues)
+round(pc3$sdev^2,2)
+
+#make a scree plot with parallel analysis
+source("http://www.reuningscherer.net/STAT660/R/parallel.r.txt")
+parallelplot(pc3)
+
+
+#make scoreplot with confidence ellipse : 
+#  c(1,2) specifies to use components 1 and 2
+#get function from online
+source("http://reuningscherer.net/stat660/r/ciscoreplot.R.txt")
+
+#run the function
+ciscoreplot(pc3,c(1,2),c(1:pc3$n.obs))
+
+
+#make a biplot for first two components
+
+biplot(pc3,choices=c(1,2),pc.biplot=T, cex=.7)
+```
+
+###  PCA - NASA Understory Data
+
+```{r}
+#read in data from online location
+NASA <- read.csv("http://reuningscherer.net/stat660/data/NASA1/snf/NASAUnderstory.csv",header=T)
+head(NASA)
+names(NASA)
+
+#get long version of species columns labels
+NASA.lab <- NASA$Labels
+NASA <- NASA[,-32]
+
+head(NASA)
+
+#Correlation Plot
+corrplot.mixed(cor(NASA[,-c(1:2)]), lower.col="black", upper = "ellipse", tl.col = "black", number.cex=.7, order = "hclust",
+               tl.pos = "lt", tl.cex=.7, main="Correlations for NASA Data")
+
+#Run PCA - remove column ID and species name
+pc4 <- princomp(NASA[,-c(1:2)],cor=TRUE)
+
+#print results
+print(summary(pc4),digits=2,loadings=pc4$loadings,cutoff=0)
+
+#view eigenvalues (note that R gives square-root of eigenvalues)
+round(pc4$sdev^2,2)
+```
+
+```{r}
+
+#Evaluate Multivariate Normality
+#get online function
+source("http://www.reuningscherer.net/STAT660/R/CSQPlot.r.txt")
+
+#run the function
+CSQPlot(NASA[,-c(1:2)],label="NASA Understory")
+
+#make a scree plot with parallel analysis
+source("http://www.reuningscherer.net/STAT660/R/parallel.r.txt")
+parallelplot(pc4)
+
+
+#make scoreplot with confidence ellipse: 
+#  c(1,2) specifies to use components 1 and 2
+#get function from online
+source("http://reuningscherer.net/stat660/r/ciscoreplot.R.txt")
+
+#run the function
+ciscoreplot(pc4, c(1,2), c(1:pc4$n.obs))
+
+#I was curious which overstory species was on each side
+text(pc4$scores[,1],pc4$scores[,2], labels = NASA[,2], cex = 0.6, col = as.numeric(NASA[,2]))
+
+
+#make a biplot for first two components
+biplot(pc4, choices=c(1,2), pc.biplot = T, cex = 0.7)
+
+```
+
+
