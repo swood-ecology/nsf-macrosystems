@@ -1,0 +1,320 @@
+---
+title: "lab-experiment-1-analysis"
+author: "A Polussa"
+date: "4/11/2020"
+output: html_document
+---
+
+
+## Libraries and import data
+
+```{r data import, warning=FALSE, message=FALSE}
+
+library(plotrix)
+library(ggplot2)
+library(tidyverse)
+library(export)
+library(ggrepel)
+
+
+
+setwd("C:/Users/alexa/Dropbox (Yale_FES)/Macrosystems Biol Bradford Wieder Wood 2019-2024/")
+
+soilGWC            <- read_csv("calculated-data/field-experiment/prelim/soilGWC_prelim-1_Fall-2019.csv")
+siteDataRaw        <- read_csv("metadata/sample_IDs.csv")
+soilpH             <- read_csv("raw-data/field-experiment/prelim/soilpH_prelim-1_Fall-2019.csv")
+   
+# SIR 
+   scbiSIR            <- read_csv("calculated-data/field-experiment/prelim/scbiSIR_prelim-1_Fall 2019.csv")
+   harvSIR            <- read_csv("calculated-data/field-experiment/prelim/harvSIR_prelim-1_Fall 2019.csv")
+soilSIR            <- bind_rows(scbiSIR, harvSIR) %>% select(unique.id, CO2CperHour) %>% rename(sir = CO2CperHour)
+
+
+
+
+# aggregated cumulative carbon mineralization
+cumulativeCmin <- read_csv("calculated-data/lab-experiment/experiment-1/cumulative_aggregate_cmin_calc_exp-1.csv")
+
+# aggregated time-resolved time-flux 
+co2flux_aggregated      <- read_csv("calculated-data/lab-experiment/experiment-1/cmin_calc_aggregate_exp-1.csv")
+
+# time-resolved co2-flux with replicates
+co2flux_disaggregated <- read_csv("calculated-data/lab-experiment/experiment-1/cmin_calc_exp-1.csv")
+
+
+```
+
+
+## cumulative carbon mineralization data
+
+```{r site data}
+
+# dataframe with site data, ph, SIR, and gwc
+siteData <- siteDataRaw %>% 
+  left_join(., soilGWC, by = "unique.id") %>%
+  left_join(., soilpH, by = "unique.id") %>%
+  left_join(., soilSIR, by = "unique.id") %>%
+  select(-c("X1", "notes", 'standard.7', 
+            "standard.4", "calibration.7", 
+            "calibration.4" , "slope.y")) %>%
+  rename(slope = slope.x)
+
+
+# Create factors for ploting
+# dataframe is cumulativeCO2SiteData
+
+left_join(cumulativeCmin, siteData, by = "unique.id") ->   cumulativeCO2SiteData
+
+# explicitly create factors and order
+
+cumulativeCO2SiteData$site      <- factor(cumulativeCO2SiteData$site, levels = c("harv", "scbi"))
+cumulativeCO2SiteData$plot      <- factor(cumulativeCO2SiteData$plot, levels = 1:49)
+cumulativeCO2SiteData$species   <- factor(cumulativeCO2SiteData$species, levels = c("RO", "RM", "WP", "TP", "HI"))
+
+str(cumulativeCO2SiteData)
+```
+
+
+## Time series data creation
+
+```{r time series data}
+
+
+# Create factors for ploting
+
+left_join(co2flux_aggregated, siteData, by = "unique.id") ->   co2flux_aggregated
+
+co2flux_aggregated$moist.trt <- factor(co2flux_aggregated$moist.trt, levels = c("35", "60", "100"))
+
+
+# add a new unit with all values of zero 
+bind_rows(
+  co2flux_aggregated %>% 
+    filter(day == 1) %>%
+    mutate(
+      day=replace(day, day == 1, 0),
+      date= replace(date, day == 0, "2020-02-25"),
+      CO2CpergLitter=replace(CO2CpergLitter, day == 0, 0)
+    ),
+  co2flux_aggregated) -> co2flux_aggregated
+
+# summary by date and treatment 
+co2flux_aggregated %>% 
+  group_by(day, moist.trt) %>%
+  summarise(meanCO2 = mean(CO2CpergLitter, na.rm = T),
+            std.err = std.error(CO2CpergLitter, na.rm = T),
+            sd = sd(CO2CpergLitter, na.rm = T)) -> co2flux_date_trt_mean
+
+# summary by date, species, and treatment 
+co2flux_aggregated %>% 
+  group_by(day, species, moist.trt) %>%
+  summarise(meanCO2 = mean(CO2CpergLitter, na.rm = T),
+            std.err = std.error(CO2CpergLitter, na.rm = T),
+            sd = sd(CO2CpergLitter, na.rm = T)) -> co2flux_date_species_trt_mean
+
+str(co2flux_aggregated)
+```
+
+
+
+## some mark functions
+
+```{r}
+
+r2.mixed<-function(mF){
+  mFX<-model.matrix(mF)
+  VarF <- var(as.vector(fixef(mF) %*% t(mFX)))
+  VarR<-sum(as.numeric(VarCorr(mF))) 
+  VarResid<-attr(VarCorr(mF), "sc")^2
+  fR2<-VarF/(VarF + VarR + VarResid)
+  rfR2<-(VarF + VarR)/(VarF + VarR + VarResid)
+  list(fR2=fR2,rfR2=rfR2)
+}
+
+
+#vif function for evaluating models:
+
+vif.mer <- function (fit) {
+  ## adapted from rms::vif
+  
+  v <- vcov(fit)
+  nam <- names(fixef(fit))
+  
+  ## exclude intercepts
+  ns <- sum(1 * (nam == "Intercept" | nam == "(Intercept)"))
+  if (ns > 0) {
+    v <- v[-(1:ns), -(1:ns), drop = FALSE]
+    nam <- nam[-(1:ns)]
+  }
+  
+  d <- diag(v)^0.5
+  v <- diag(solve(v/(d %o% d)))
+  names(v) <- nam
+  v
+}
+
+kappa.mer <- function (fit,
+                       scale = TRUE, center = FALSE,
+                       add.intercept = TRUE,
+                       exact = FALSE) {
+  X <- fit@X
+  nam <- names(fixef(fit))
+  
+  ## exclude intercepts
+  nrp <- sum(1 * (nam == "(Intercept)"))
+  if (nrp > 0) {
+    X <- X[, -(1:nrp), drop = FALSE]
+    nam <- nam[-(1:nrp)]
+  }
+  
+  if (add.intercept) {
+    X <- cbind(rep(1), scale(X, scale = scale, center = center))
+    kappa(X, exact = exact)
+  } else {
+    kappa(scale(X, scale = scale, center = scale), exact = exact)
+  }
+}
+
+colldiag.mer <- function (fit,
+                          scale = TRUE, center = FALSE,
+                          add.intercept = TRUE) {
+  ## adapted from perturb::colldiag, method in Belsley, Kuh, and
+  ## Welsch (1980). look for a high condition index (> 30) with
+  ## more than one high variance propotion. see ?colldiag for more
+  ## tips.
+  result <- NULL
+  if (center)
+    add.intercept <- FALSE
+  if (is.matrix(fit) || is.data.frame(fit)) {
+    X <- as.matrix(fit)
+    nms <- colnames(fit)
+  }
+  else if (class(fit) == "mer") {
+    nms <- names(fixef(fit))
+    X <- fit@X
+    if (any(grepl("(Intercept)", nms))) {
+      add.intercept <- FALSE
+    }
+  }
+  X <- X[!is.na(apply(X, 1, all)), ]
+  
+  if (add.intercept) {
+    X <- cbind(1, X)
+    colnames(X)[1] <- "(Intercept)"
+  }
+  X <- scale(X, scale = scale, center = center)
+  
+  svdX <- svd(X)
+  svdX$d
+  condindx <- max(svdX$d)/svdX$d
+  dim(condindx) <- c(length(condindx), 1)
+  
+  Phi = svdX$v %*% diag(1/svdX$d)
+  Phi <- t(Phi^2)
+  pi <- prop.table(Phi, 2)
+  colnames(condindx) <- "cond.index"
+  if (!is.null(nms)) {
+    rownames(condindx) <- nms
+    colnames(pi) <- nms
+    rownames(pi) <- nms
+  } else {
+    rownames(condindx) <- 1:length(condindx)
+    colnames(pi) <- 1:ncol(pi)
+    rownames(pi) <- 1:nrow(pi)
+  }
+  
+  result <- data.frame(cbind(condindx, pi))
+  zapsmall(result)
+}
+
+maxcorr.mer <- function (fit,
+                         exclude.intercept = TRUE) {
+  so <- summary(fit)
+  corF <- so@vcov@factors$correlation
+  nam <- names(fixef(fit))
+  
+  ## exclude intercepts
+  ns <- sum(1 * (nam == "Intercept" | nam == "(Intercept)"))
+  if (ns > 0 & exclude.intercept) {
+    corF <- corF[-(1:ns), -(1:ns), drop = FALSE]
+    nam <- nam[-(1:ns)]
+  }
+  corF[!lower.tri(corF)] <- 0
+  maxCor <- max(corF)
+  minCor <- min(corF)
+  if (abs(maxCor) > abs(minCor)) {
+    zapsmall(maxCor)
+  } else {
+    zapsmall(minCor)
+  }
+}
+```
+
+## mixed effects model for cumulative c-mineralization
+
+```{r linear modeling}
+
+library(lme4)
+library(arm)
+library(MuMIn)
+library(sampling)
+library(LMERConvenienceFunctions)
+library(car)
+library(MASS)
+library(usdm)
+
+library(regclass)
+
+hist(cumulativeCO2SiteData$cumulativeCO2Flux)
+qqnorm(cumulativeCO2SiteData$cumulativeCO2Flux)
+
+# full model linear model
+
+lm1 <- lm(cumulativeCO2Flux ~ moist.trt + site+ species + moisturePercent + soil.pH + sir, data =cumulativeCO2SiteData )
+
+summary(lm1)
+summary(standardize(lm1))
+plot(lm1)
+VIF(lm1)
+
+
+# full model linear model with interactions
+cumulativeCO2SiteData$moist.trt <- as.numeric(as.character(cumulativeCO2SiteData$moist.trt))
+
+
+lm2 <- lm(cumulativeCO2Flux ~ moist.trt*moisturePercent + site+ species + soil.pH + sir, data =cumulativeCO2SiteData )
+
+summary(lm2)
+summary(standardize(lm2))
+plot(lm2)
+VIF(lm2)
+
+
+# not appropriate use of linear mixed model
+
+Cminmodel1<-lmer(cumulativeCO2Flux ~ moist.trt + species + moisturePercent + soil.pH + sir + (1|site), data=cumulativeCO2SiteData)
+
+summary(Cminmodel1)
+summary(standardize(Cminmodel1))
+pamer.fnc(Cminmodel1)
+plot(Cminmodel1)
+r2.mixed(Cminmodel1)
+sqrt(vif.mer(standardize(Cminmodel1)))
+
+
+```
+
+```{r}
+
+cumulativeCO2SiteData$fit <- predict(Cminmodel5)
+
+ ggplot(cumulativeCO2SiteData ,aes(moisturePercent, cumulativeCO2Flux, group=interaction(site, species), col=species, shape= site)) + 
+      facet_grid(~moist.trt) +
+      geom_line(aes(y=fit, lty=site), size=0.8) +
+      geom_point(alpha = 0.5) + 
+      geom_hline(yintercept=0, linetype="dashed") +
+      theme_bw()
+
+
+```
+

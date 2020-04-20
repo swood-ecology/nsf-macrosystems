@@ -4,23 +4,32 @@ library(plotrix)
 library(ggplot2)
 library(tidyverse)
 library(export)
+library(ggrepel)
+
 # Input some site data for plotting
 setwd("C:/Users/alexa/Dropbox (Yale_FES)/Macrosystems Biol Bradford Wieder Wood 2019-2024/")
 
 
 soilGWC <- read_csv("calculated-data/field-experiment/prelim/soilGWC_prelim-1_Fall-2019.csv")
 siteData <- read_csv("metadata/sample_IDs.csv")
+soilpH <- read_csv("raw-data/field-experiment/prelim/soilpH_prelim-1_Fall-2019.csv")
 cumulativeDataCalc <- read_csv("calculated-data/lab-experiment/experiment-1/cumulative_cmin_calc_exp-1.csv")
 aggregateData <-read_csv("calculated-data/lab-experiment/experiment-1/cmin_calc_aggregate_exp-1.csv")
 
 
-
-
-
 # Create factors for ploting
 cumulativeDataCalc$moist.trt <- factor(cumulativeDataCalc$moist.trt, levels = c("35", "60", "100"))
+
 left_join(cumulativeDataCalc, soilGWC, by = "unique.id") %>%
-  left_join(., siteData, by = "unique.id") -> cumulativeCO2SiteData
+  left_join(., siteData, by = "unique.id") %>%
+  left_join(., soilpH, by = "unique.id")-> cumulativeCO2SiteData
+
+
+
+
+
+
+# Plots
 
 # cumulative CO2 flux by moisture treatment 
 
@@ -29,15 +38,57 @@ ggplot(cumulativeCO2SiteData, aes(x = moist.trt, y = cumulativeCO2Flux, fill = m
 # graph2ppt(file="Cumulative CO2 flux by Moisture.pptx", width=7, height=5) 
 
 
+
+# cumulative CO2 by species 
+
+ggplot(cumulativeCO2SiteData, aes(x = species, y = cumulativeCO2Flux, fill = species)) + 
+  geom_boxplot(outlier.alpha = 0) + 
+  geom_point(position =position_jitterdodge(), alpha = 0) + 
+  geom_label_repel(aes(label=plot), size = 3, force = 0.1, direction = "x", 
+                   label.padding = 0.1, box.padding = 0.1,
+                   segment.alpha = 0, alpha = .9) +
+  facet_grid(.~moist.trt)
+# graph2ppt(file="Cumulative CO2 flux by Species.pptx", width=7, height=5)
+
+
+# cumulative co2 per moist treat by species
+
 ggplot(cumulativeCO2SiteData, aes(x = moist.trt, y = cumulativeCO2Flux, fill = moist.trt)) + 
-  geom_boxplot(outlier.alpha = 0) + geom_point(position =position_jitterdodge(), alpha = .2) + facet_grid(.~species)
-
-
-
+  geom_boxplot(outlier.alpha = 0) + 
+  geom_point(position =position_jitterdodge(), alpha = .2) + 
+  facet_grid(.~species)
 
 # cumulative CO2 flux by quadrat GWC
-ggplot(cumulativeCO2SiteData, aes(x = moisturePercent, y = cumulativeCO2Flux, color = moist.trt)) + 
-  geom_point() + geom_smooth(method='lm', formula= y~x) +facet_grid(species~.)
+ggplot(cumulativeCO2SiteData, 
+       aes(x = moisturePercent, y = cumulativeCO2Flux, color = moist.trt)) +
+  geom_smooth(method='lm', formula= y~x) +facet_grid(species*site~moist.trt) + 
+  geom_point(alpha = 0.7, size = 3.5,  color = "white") +
+  geom_text(aes(label=plot), color = "black",  size = 3, alpha = 1)
+# graph2ppt(file="Day 35 cumulative CO2 flux by gwc.pptx", width=7, height=5)
+
+# cumulative CO2 flux by quadrat GWC combined
+ggplot(cumulativeCO2SiteData, 
+       aes(x = moisturePercent, y = cumulativeCO2Flux)) +
+  geom_smooth(aes(color = moist.trt), method='lm', formula= y~x)  + 
+  geom_point(aes(color = species), alpha = 0.7, size = 3.5) +
+  geom_text(aes(label=plot), color = "black",  size = 3, alpha = 1) +theme_classic()
+# graph2ppt(file="Day 35 cumulative CO2 flux by gwc combined.pptx", width=7, height=5)
+
+# cumulative CO2 flux by quadrat pH
+ggplot(cumulativeCO2SiteData, 
+       aes(x = soil.pH, y = cumulativeCO2Flux, color = moist.trt)) +
+  geom_smooth(method='lm', formula= y~x) +facet_grid(species*site~moist.trt) + 
+  geom_point(alpha = 0.7, size = 3.5,  color = "white") +
+  geom_text(aes(label=plot), color = "black",  size = 3, alpha = 1)
+graph2ppt(file="Day 35 cumulative CO2 flux by pH.pptx", width=7, height=5)
+
+
+# cumulative co2 flux by quadrat ph combined
+ggplot(cumulativeCO2SiteData, 
+       aes(x = soil.pH, y = cumulativeCO2Flux)) +
+  geom_smooth(aes(color = moist.trt), method='lm', formula= y~x)  + 
+  geom_point(aes(color = species), alpha = 0.7, size = 3.5) +
+  geom_text(aes(label=plot), color = "black",  size = 3, alpha = 1) +theme_classic()
 
 
 # cumulative CO2 flux by quadrat slope

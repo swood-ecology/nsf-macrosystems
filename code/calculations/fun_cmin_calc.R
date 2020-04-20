@@ -4,14 +4,17 @@
 
 library(tidyverse)
 
-#' Add together two numbers.
+#' Calculate carbon mineralization
 #' 
-#' @param x A number.
-#' @param y A number.
-#' @return The sum of \code{x} and \code{y}.
-#' @examples
-#' add(1, 1)
-#' add(10, 1)
+#' This function calculates the CO2 production per hour from raw integral values from an infrrared gas analyser (IRGA)
+#' The input format is standardized and found in the folder raw-data/lab-experiment/experiment-1
+#' It needs to include microcosm flushing time and date, sampling time and date, irga values, and co2 standard values
+#' 
+#' @param cmin Data frame including flush time, date, irga sampling time & date, integral values, and co2 standard values
+#' @param date Character string for date in the format "day-XX_YYYYMMDD" (e.g. "day-02_20200227")
+#' @return cmin_calc a dataframe that includes lab.id, unique.id, soil.volume, CO2CperHour
+#' @export .csv A detailed calculated dataframe with the title irga_calc_+"date"+.csv" 
+
 
 cmin_calc_fun <- function(cmin, date){
   
@@ -88,15 +91,16 @@ cmin_calc_fun <- function(cmin, date){
       dilutionFactor = ((5*times.sampled)/(57.15-soil.volume))+1,    
       measuredCO2 = irga.integral*(standard.co2/correctedStandard),             # ppm
       concentrationCO2 = measuredCO2*dilutionFactor,                       # ppm
-      volumeCO2 = concentrationCO2*((57.15-soil.volume)/1000),             # L
-      molesCO2 = (volumeCO2/22.414)*273.15/293.15,                         # mol
-      CO2C = molesCO2*12.011,                                              # g
-      CO2CperHour = CO2C/incubationTime                                    # g h-1
+      volumeCO2 = concentrationCO2*((57.15-soil.volume)/1000),             # uL
+      molesCO2 = (volumeCO2/22.414)*273.15/293.15,                         # umol
+      CO2C = molesCO2*12.011,                                              # ug
+      CO2CperHour = CO2C/incubationTime                                    # ug h-1
     ) %>% select(c(lab.id, unique.id, soil.volume, standard.co2, correctedStandard, the.time, the.slope,
                    irga.integral, incubationTime, CO2C, CO2CperHour)) -> cmin_calc 
   
+  setwd("mid_calcs")
   write.csv(cmin_calc, paste("irga_calc_", date, ".csv")) 
-  
+  setwd("..")
   cmin_calc %>% select(c(lab.id, unique.id, soil.volume, CO2CperHour)) -> cmin_calc
   
   return(cmin_calc)
