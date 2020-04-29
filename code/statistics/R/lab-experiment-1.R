@@ -6,38 +6,60 @@ library(rstan)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
+path <- "Box Sync/Work/The Nature Conservancy/NSF Macrosystems/"
+setwd(path)
+
 #### READ CUMULATIVE DATA ####
+# All C mineralization data
 cumulCMin <- read_csv("calculated-data/lab-experiment/experiment-1/cumulative_cmin_calc_exp-1.csv")
+# Data aggregated per tube
 cumulCMinAggr <- read_csv("calculated-data/lab-experiment/experiment-1/cumulative_aggregate_cmin_calc_exp-1.csv")
+# Treatment description data
 metaData <- read_csv("metadata/lab-experiment/exp-1_design.csv")
 
 #### MANIPULATE DATA ####
-### Drop first column of both data frames
+# Drop first column of both data frames
 metaData <- metaData %>% select(-X1)
 
-### Merge data files together based on unique id
+# Merge data files together based on unique id
 cumulAggr <- full_join(cumulCMinAggr, metaData)
 
-### Create lists of data for Stan ###
+# Create lists of data for Stan
 cumulAggr$moistSq <- cumulAggr$moist.trt^2
 
-## No measurement error
+# Subset to only replicated data
+cumul.rep <- cumulCMin %>% filter(
+  replicate!=1 | lead(replicate) != 1 
+)
+
+# Calculate average SD
+cumul.rep %>% group_by(moist.trt) %>% summarize(sd=sd(cumulativeCO2Flux))
+
+#### CONSTRUCT DATA LISTS ####
+# No measurement error
 cA.dat <- list(
   N = nrow(cumulAggr),
   y = cumulAggr$cumulativeCO2Flux,
   x = cumulAggr$moist.trt
 )
 
-## Universal error
+# Universal error
 cA.err.dat <- list(
   N = nrow(cumulAggr),
   y_obs = cumulAggr$cumulativeCO2Flux,
-  y_err = rep(5,nrow(cumulAggr)),
+  y_err = rep(5.3,nrow(cumulAggr)),
   x = cumulAggr$moist.trt
 )
 
+# Universal error v2
+cA.err.dat.2 <- list(
+  N = nrow(cumulAggr),
+  y_obs = cumulAggr$cumulativeCO2Flux,
+  sd_known = 5,
+  x = cumulAggr$moist.trt
+)
 
-### Run models ###
+#### RUN STAN MODELS ####
 m1 <- stan(file = "code/statistics/stan/polynomial.stan", data = cA.dat,
            iter = 5000,
            warmup = 1000,
@@ -45,15 +67,23 @@ m1 <- stan(file = "code/statistics/stan/polynomial.stan", data = cA.dat,
            chains = 3)
 
 m2 <- stan(file = "code/statistics/stan/polynomial_meas-err.stan", 
-           data = cA.err.dat2,
+           data = cA.err.dat,
            iter = 5000,
            warmup = 1000,
            control=list(adapt_delta=0.99,
                         max_treedepth=15),
            chains = 3)
+m3 <- stan(file = "code/statistics/stan/meas-err.stan", 
+                data = cA.err.dat.2,
+                iter = 3000,
+                warmup = 1000,
+                chains = 3)
 
+
+#### EVALUATE STAN MODELS ####
 print(m1)
 print(m2, pars=c("alpha","beta1","beta2","sigma"))
+print(m3)
 
 
 
