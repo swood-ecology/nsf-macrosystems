@@ -12,7 +12,7 @@ parameters{
 }
 
 transformed parameters {
-  sd_total = sqrt(sd_known ^ 2 + sd_parameter ^ 2);
+  real sd_total = sqrt(sd_known ^ 2 + sd_parameter ^ 2);
 }
 
 model {

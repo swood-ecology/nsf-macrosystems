@@ -83,7 +83,7 @@ m3 <- stan(file = "code/statistics/stan/meas-err.stan",
 #### EVALUATE STAN MODELS ####
 print(m1)
 print(m2, pars=c("alpha","beta1","beta2","sigma"))
-print(m3)
+print(m3, pars=c("alpha","beta","sd_parameter","sd_total"))
 
 
 
