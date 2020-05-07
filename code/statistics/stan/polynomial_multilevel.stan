@@ -1,9 +1,12 @@
 data {
   int<lower=0> N; // number of cases
-  int<lower=0> J; // number of sites 
+  int<lower=0> J; // number of hierarchies 
   vector[N] moistTreat;    // moisture treatment (covariate)
   vector[N] moistPlot; // initial gravimetric (quadrat moisture) (ALSO ADD MEASUREMENT ERROR IN X)
   vector[N] y;    // CO2 flux (variate)
+  
+  // Random effect
+  int site[N];
 }
 
 transformed data {
@@ -11,7 +14,7 @@ transformed data {
 }
 
 parameters {
-  real alpha; // intercept
+  vector[J] alpha; // intercept
   real betaMoistTreat;  // slope for linear trend
   real betaMoistTreatSq;// curvature
   real betaMoistPlot;   // slope for plot moisture effect
@@ -27,6 +30,7 @@ model {
   sigma ~ cauchy(0, 5);
   
   // Model
-  y ~ normal(alpha + betaMoistTreat * moistTreat + betaMoistTreatSq * x2 + betaMoistPlot * moistPlot, sigma);
+  for(n in 1:N)
+    y[n] ~ normal(alpha[site[n]] + betaMoistTreat * moistTreat[n] + betaMoistTreatSq * x2[n] + betaMoistPlot * moistPlot[n], sigma);
 }
 

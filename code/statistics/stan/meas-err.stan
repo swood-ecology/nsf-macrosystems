@@ -5,9 +5,14 @@ data {
   vector[N] x;        // predictor
 }
 
+transformed data {
+  vector[N] x2 = square(x); // squared term of moisture treatment
+}
+
 parameters{
   real alpha;
-  real beta;
+  real beta1;
+  real beta2;
   real<lower=0> sd_parameter;
 }
 
@@ -18,13 +23,14 @@ transformed parameters {
 model {
   # Priors 
   alpha ~ normal(0, 10);
-  beta ~ normal(0, 10);
-  sd_parameter ~ normal(5, 1);
+  beta1 ~ normal(0, 10);
+  beta2 ~ normal(0, 10);
+  sd_parameter ~ normal(5, 10);
 
   # Likelihood
-  y_obs ~ normal(alpha + x * beta, sd_total);
+  y_obs ~ normal(alpha + x * beta1 + x2 * beta2, sd_total);
 } 
 
 generated quantities {
-    vector[N] y_true = alpha + x * beta;
+    vector[N] y_true = alpha + x * beta1 + x2 * beta2;
 }
