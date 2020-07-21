@@ -1,0 +1,285 @@
+---
+title: "experiment-1-anaylsis through to day 35"
+author: "A Polussa"
+date: "4/11/2020"
+output: html_document
+---
+
+## Libraries and import data
+
+```{r data import, warning=FALSE, message=FALSE}
+
+library(plotrix)
+library(ggplot2)
+library(tidyverse)
+library(export)
+library(ggrepel)
+
+setwd("C:/Users/alexa/Dropbox (Yale_FES)/Macrosystems Biol Bradford Wieder Wood 2019-2024/")
+
+soilGWC            <- read_csv("calculated-data/field-experiment/prelim/soilGWC_prelim-1_Fall-2019.csv")
+siteDataRaw        <- read_csv("metadata/sample_IDs.csv")
+soilpH             <- read_csv("raw-data/field-experiment/prelim/soilpH_prelim-1_Fall-2019.csv")
+   
+# SIR 
+   scbiSIR            <- read_csv("calculated-data/field-experiment/prelim/scbiSIR_prelim-1_Fall 2019.csv")
+   harvSIR            <- read_csv("calculated-data/field-experiment/prelim/harvSIR_prelim-1_Fall 2019.csv")
+soilSIR            <- bind_rows(scbiSIR, harvSIR) %>% select(unique.id, CO2CperHour) %>% rename(sir = CO2CperHour)
+
+# aggregated cumulative carbon mineralization
+cumulativeCmin <- read_csv("calculated-data/lab-experiment/experiment-1/cumulative_aggregate_cmin_calc_exp-1.csv")
+
+# aggregated time-resolved time-flux 
+co2flux_aggregated      <- read_csv("calculated-data/lab-experiment/experiment-1/cmin_calc_aggregate_exp-1.csv")
+
+# time-resolved co2-flux with replicates
+co2flux_disaggregated <- read_csv("calculated-data/lab-experiment/experiment-1/cmin_calc_exp-1.csv")
+
+
+
+```
+
+
+
+
+
+
+## site data
+
+```{r site data }
+# Create factors for ploting
+# dataframe is cumulativeCO2SiteData
+
+# dataframe with site data, ph, SIR, and gwc
+siteData <- siteDataRaw %>% 
+  left_join(., soilGWC, by = "unique.id") %>%
+  left_join(., soilpH, by = "unique.id") %>%
+  left_join(., soilSIR, by = "unique.id") %>%
+  select(-c("X1", "notes", 'standard.7', 
+            "standard.4", "calibration.7", 
+            "calibration.4" , "slope.y")) %>%
+  rename(slope = slope.x)
+
+siteData$site      <- factor(siteData$site, levels = c("harv", "scbi"))
+siteData$plot      <- factor(siteData$plot, levels = 1:49)
+siteData$species   <- factor(siteData$species, levels = c("RO", "RM", "WP", "TP", "HI"))
+
+```
+
+## cumulative carbon mineralization data
+
+```{r cumulative data}
+# Create factors for ploting
+# dataframe is cumulativeCO2SiteData
+
+left_join(cumulativeCmin, siteData, by = "unique.id") ->   cumulativeCO2SiteData
+
+cumulativeCO2SiteData$moist.trt <- factor(cumulativeCO2SiteData$moist.trt, levels = c("35", "60", "100"))
+
+```
+
+
+## Time series data creation
+
+```{r time series data}
+
+# Create factors for ploting
+
+left_join(co2flux_aggregated, siteData, by = "unique.id") ->   co2flux_aggregated
+
+co2flux_aggregated$moist.trt <- factor(co2flux_aggregated$moist.trt, levels = c("35", "60", "100"))
+
+
+# add a new unit with all values of zero 
+bind_rows(
+  co2flux_aggregated %>% 
+    filter(day == 1) %>%
+    mutate(
+      day=replace(day, day == 1, 0),
+      date= replace(date, day == 0, "2020-02-25"),
+      CO2CpergLitter=replace(CO2CpergLitter, day == 0, 0)
+    ),
+  co2flux_aggregated) -> co2flux_aggregated
+
+# summary by date and treatment 
+co2flux_aggregated %>% 
+  group_by(day, moist.trt) %>%
+  summarise(meanCO2 = mean(CO2CpergLitter, na.rm = T),
+            std.err = std.error(CO2CpergLitter, na.rm = T),
+            sd = sd(CO2CpergLitter, na.rm = T)) -> co2flux_date_trt_mean
+
+# summary by date, species, and treatment 
+co2flux_aggregated %>% 
+  group_by(day, species, moist.trt) %>%
+  summarise(meanCO2 = mean(CO2CpergLitter, na.rm = T),
+            std.err = std.error(CO2CpergLitter, na.rm = T),
+            sd = sd(CO2CpergLitter, na.rm = T)) -> co2flux_date_species_trt_mean
+
+str(co2flux_aggregated)
+
+```
+
+## view CO2 flux contribution from soil standards vs. experimental microcosms
+
+```{r visualize CO2 flux}
+
+# using variables:
+# co2flux_disaggregated
+
+# visualize only soil flux
+co2flux_disaggregated %>% 
+ggplot(aes(x = lab.id, y = contributionCO2CfromSoil)) +
+  facet_grid(day~moist.trt) +
+  geom_bar( stat = "identity", color = "black", aes(fill = as.factor(moist.trt))) + 
+  ylab(label = "ug CO2-C hr-1 g-1 soil") +
+  theme_bw()
+
+# look at relative soil flux and microcosm flux 
+ggplot(data = co2flux_disaggregated, aes(x = lab.id, y = CO2CpergLitter)) + 
+  facet_grid(day~.) +
+  geom_bar(alpha = 0.7,stat = "identity", fill = "grey", color = "black") + 
+  geom_bar( stat = "identity", aes(y = contributionCO2CfromSoil, color = as.factor(moist.trt))) + 
+  ylab(label = "ug CO2-C hr-1") +
+  theme_bw()
+  
+
+
+```
+
+## cumulative CO2 plots
+
+```{r cumulative plots}
+
+
+# fig 1
+# cumulative CO2 flux by moisture treatment 
+ggplot(cumulativeCO2SiteData, aes(x = moist.trt, y = cumulativeCO2Flux, fill = moist.trt)) + 
+  geom_boxplot(outlier.alpha = 0) + geom_point(position =position_jitterdodge(), alpha = .2) + 
+  ggtitle("fig 1. cumulative CO2 by moisture treatment")
+# graph2ppt(file="Cumulative CO2 flux by Moisture.pptx", width=7, height=5) 
+
+
+
+# fig 2
+# cumulative CO2 by species 
+ggplot(cumulativeCO2SiteData, aes(x = species, y = cumulativeCO2Flux, fill = species)) + 
+  geom_boxplot(outlier.alpha = 0) + 
+  geom_point(position =position_jitterdodge(), alpha = 0) + 
+  geom_label_repel(aes(label=plot), size = 2, force = 0.1, direction = "x", 
+                   label.padding = 0.1, box.padding = 0.1,
+                   segment.alpha = 0, alpha = .9) +
+  facet_grid(.~moist.trt)+ ylab(label = "total mg CO2-C g-1 litter")  + 
+  ggtitle("fig 2. cumulative CO2 by moisture treatment and species")
+# graph2ppt(file="Cumulative CO2 flux by Species.pptx", width=7, height=5)
+
+
+
+# fig 3 
+# cumulative co2 per moist treat by species
+ggplot(cumulativeCO2SiteData, aes(x = moist.trt, y = cumulativeCO2Flux, fill = moist.trt)) + 
+  geom_boxplot(outlier.alpha = 0) + 
+  geom_point(position =position_jitterdodge(), alpha = .2) + 
+  facet_grid(.~species)+ ylab(label = "total mg CO2-C g-1 litter") + 
+  ggtitle("fig 3. cumulative CO2 by species and moisture treatment")
+
+
+# fig. 4
+# cumulative CO2 flux by quadrat GWC
+ggplot(cumulativeCO2SiteData, 
+       aes(x = moisturePercent, y = cumulativeCO2Flux, color = moist.trt)) +
+  geom_smooth(method='lm', formula= y~x) +facet_grid(species*site~moist.trt) + 
+  geom_point(alpha = 0.7, size = 3.5,  color = "white") +
+  geom_text(aes(label=plot), color = "black",  size = 3, alpha = 1)+ ylab(label = "total mg CO2-C g-1 litter") + xlab(label = "gravimetric soil moisture percent") +
+  ggtitle("fig 4. cumulative CO2 by quadrat soil moisture")
+# graph2ppt(file="Day 35 cumulative CO2 flux by gwc.pptx", width=7, height=5)
+
+# fig 5
+# cumulative CO2 flux by quadrat GWC
+ggplot(cumulativeCO2SiteData, 
+       aes(x = moisturePercent, y = cumulativeCO2Flux)) +
+  geom_smooth(aes(color = moist.trt), method='lm', formula= y~x)  + 
+  geom_point(aes(color = species), alpha = 0.7, size = 3.5) +
+  geom_text(aes(label=plot), color = "black",  size = 3, alpha = 1)+ ylab(label = "total mg CO2-C g-1 litter") +facet_grid(.~moist.trt) + xlab(label = "gravimetric soil moisture percent") +
+  ggtitle("fig 5. cumulative CO2 by quadrat soil moisture and moisture treatment") + theme_bw()
+# graph2ppt(file="Day 35 cumulative CO2 flux by gwc combined.pptx", width=7, height=5)
+
+
+
+# cumulative CO2 flux by quadrat GWC split by high and low 
+# cumulativeCO2SiteData %>% 
+#   group_by(species, moist.trt) %>%
+#   mutate(bin=cut_number(moisturePercent, n = 2, labels = c("dry", "wet"))) %>%
+#   ggplot(aes(x = bin, y = cumulativeCO2Flux)) +
+#   geom_boxplot(aes(color = moist.trt))   +
+#   geom_point(aes(color = species), position = position_jitter(), alpha = 0.7, size = 3.5) +  geom_text(aes(label=plot), position = position_jitter(), color = "black",  size = 3, alpha = 1)+ facet_grid(species*site~moist.trt)
+
+
+# fig 6
+cumulativeCO2SiteData %>% 
+  group_by(species, moist.trt) %>%
+  mutate(bin=cut_number(moisturePercent, n = 2, labels = c("dry", "wet"))) %>%
+  ggplot(aes(x = bin, y = cumulativeCO2Flux)) +
+  geom_boxplot(aes(color = moist.trt))   +
+  geom_text_repel(aes(label=plot), direction = "x", force = 0.05, segment.alpha = 0, size = 2, alpha = .7)+ facet_grid(species*site~moist.trt) + xlab(label = "quadrat Moisture") + ylab(label = "total mg CO2-C g-1 litter") + ggtitle("fig 6. cumulative CO2 by quadrat moisture and species")
+
+
+# fig 7
+cumulativeCO2SiteData %>% 
+  group_by(species, moist.trt) %>%
+  mutate(bin=cut_number(moisturePercent, n = 2, labels = c("dry", "wet"))) %>%
+  ggplot(aes(x = bin, y = cumulativeCO2Flux)) +
+  geom_boxplot(aes(color = moist.trt))   +
+  geom_text_repel(aes(label=plot), direction = "x", force = 0.05, segment.alpha = 0, size = 2, alpha = .7)+ facet_grid(site~moist.trt) + xlab(label = "quadrat Moisture") + ylab(label = "total mg CO2-C g-1 litter") + ggtitle("fig 7. cumulative CO2 by quadrat moisture")
+
+
+# fig 8
+# cumulative CO2 flux by quadrat pH
+ggplot(cumulativeCO2SiteData, 
+       aes(x = soil.pH, y = cumulativeCO2Flux, color = moist.trt)) +
+  geom_smooth(method='lm', formula= y~x) +facet_grid(species*site~moist.trt) + 
+  geom_point(alpha = 0.7, size = 3.5,  color = "white") +
+  geom_text(aes(label=plot), color = "black",  size = 3, alpha = 1)+ xlab(label = "quadrat pH") + ylab(label = "total mg CO2-C g-1 litter") + ggtitle("fig 8. cumulative CO2 by quadrat pH")
+# graph2ppt(file="Day 35 cumulative CO2 flux by pH.pptx", width=7, height=5)
+```
+
+
+## Time series Plots
+
+```{r time series plots}
+
+# time and treatment 
+# summaries needed are from co2flux_date_trt_mean
+
+ggplot(co2flux_aggregated, aes(x = day, y = CO2CpergLitter, color = moist.trt))  +
+  geom_line(data = co2flux_date_trt_mean, aes(x = day, y = meanCO2, color = moist.trt), size = .8, alpha = 1,
+            position = position_dodge(width = 1)) + 
+  geom_point(alpha = .6, position = position_dodge(width = 1), size = 1)  + 
+  geom_point(data = co2flux_date_trt_mean, aes(x = day, y = meanCO2, fill = moist.trt), size = 3, alpha = 1,
+             shape = 0, position = position_dodge(width = 1)) +
+  ylab("ug CO2-C g-1 litter hr-1")+ xlab(label = "day") + ggtitle("fig 9. CO2-C flux over time") +   theme_classic()
+
+# time and treatment, faceted by species
+# summaries needed are from co2flux_date_species_trt_mean 
+
+ggplot(co2flux_aggregated, aes(x = day, y = CO2CpergLitter, color = moist.trt))  +
+  geom_line(data = co2flux_date_species_trt_mean, aes(x = day, y = meanCO2, color = moist.trt), size = .8, alpha = 1,
+            position = position_dodge(width = 1)) +
+  geom_point(alpha = .6, position = position_dodge(width = 1), size = 1)  + 
+ 
+  ylab("ug CO2-C g-1 litter hr-1") + xlab(label = "day") + ggtitle("fig 10. CO2-C flux over time by species")+ 
+  theme_classic() + facet_grid(.~species)
+
+
+# time and treatment 
+# summaries needed are from co2flux_date_trt_mean
+
+ggplot(co2flux_aggregated, aes(x = day, y = CO2CpergLitter))  +
+  geom_line(data = co2flux_date_trt_mean, aes(x = day, y = meanCO2, color = moist.trt), size = .8, alpha = 1,
+            position = position_dodge(width = 1)) + 
+  geom_point(aes(group = moisturePercent), alpha = .6, position = position_dodge(width = 1), size = 1)  + 
+  geom_point(data = co2flux_date_trt_mean, aes(x = day, y = meanCO2, fill = moist.trt), size = 3, alpha = 1,
+             shape = 0, position = position_dodge(width = 1)) +
+  ylab("ug CO2-C g-1 litter hr-1")+ xlab(label = "day") + ggtitle("fig 9. CO2-C flux over time") +   theme_classic()
+
+```
+

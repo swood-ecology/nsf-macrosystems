@@ -1,0 +1,19 @@
+Data Management Plan TO-DO
+
+1. raw-data > field-experiment > litterChemistry_Nov-2019.csv
+Rename variables and add metadata file to match data management plan principles
+
+2. sample_ids.csv
+Fill in missing information
+
+3. lab-experiment
+Move the data files to the raw-data > lab-experiment folder and rename to follow the convention of the field-experiment data.
+Move the calculated data and code to their respective master folders
+Delete the data in the Deleted folder?
+For other microcosm-related information, like figures, calendar and protocols, move to the project-management folder.
+
+4. metadata > soilGWC_metadata_prelim-1_Fall-2019.csv
+The naming convention of the variables here is different from in the data management plan document. Make sure all raw data variable names are of the format tin.mass as opposed to tin_mass. Calculated variables should be named soil_moisture to distinguish calculated from raw data. Go through and check this throughout the current raw data files.
+
+5. Don't use .xls(x) file extensions. Only .csv.
+Go through the existing data files and make sure everything is in .csv format. Related to this, don't open the files through the Dropbox online app. Sync the Dropbox folder to your laptop and open it locally as a .csv. Only one person should be working on a file at a time. Here's some information on how to sync: https://help.dropbox.com/installs-integrations/sync-uploads/syncing-between-computers 
