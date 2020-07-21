@@ -38,7 +38,8 @@ cumul.rep <- cumulCMin %>% filter(
 )
 
 # Calculate average SD
-cumul.rep %>% group_by(moist.trt) %>% summarize(sd=sd(cumulativeCO2Flux))
+rep <- cumul.rep %>% group_by(moist.trt) %>% summarize(sd=sd(cumulativeCO2Flux))
+cumulAggr <- cumulAggr %>% left_join(rep)
 
 # Construct site-level ID
 cumulAggr$site <- cumulAggr$unique.id %>% str_sub(1,4)
@@ -65,20 +66,11 @@ cA.dat.err.ml <- list(
   J = 2,
   y_obs = cumulAggr$cumulativeCO2Flux,
   tau = 3,
-  y_err = rep(5,nrow(cumulAggr)),
+  y_err = cumulAggr$sd,
   # sd_known = 5,
   moistTreat = cumulAggr$moist.trt,
   moistPlot_meas = cumulAggr$moisturePercent,
   site = as.numeric(as.factor(cumulAggr$site))
-)
-
-# Universal error
-## MODIFY y_err to be moisture treatment specific
-cA.err.dat <- list(
-  N = nrow(cumulAggr),
-  y_obs = cumulAggr$cumulativeCO2Flux,
-  y_err = rep(5,nrow(cumulAggr)),
-  x = cumulAggr$moist.trt
 )
 
 
@@ -102,13 +94,11 @@ m3 <- stan(file = "code/statistics/stan/polynomial_multilevel_meas-err.stan", da
                            max_treedepth=15),
               chains = 3)
 
+
 #### EVALUATE STAN MODELS ####
 print(m1)
-print(m2)
-print(m3, pars=c("alpha","betaMoistTreat","betaMoistTreatSq","betaMoistPlot","sd_parameter","sd_total"))
-print(m1_ml_err, pars=c("alpha","betaMoistTreat","betaMoistTreatSq","betaMoistPlot","sd_parameter","sd_total"))
-
-
+print(m2, pars=c("alpha","betaMoistTreat","betaMoistTreatSq","betaMoistPlot","sigma"))
+print(m3, pars=c("alpha","betaMoistTreat","betaMoistTreatSq","betaMoistPlot","sigma"))
 
 
 ######## TEMPORARILY DEPRECATED FOR RAW DATA ##########

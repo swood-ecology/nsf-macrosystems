@@ -1,6 +1,5 @@
 data {
   int<lower=0> N; // number of cases
-  int<lower=0> J; // number of sites 
   vector[N] moistTreat;    // moisture treatment (covariate)
   vector[N] moistPlot; // initial gravimetric (quadrat moisture) (ALSO ADD MEASUREMENT ERROR IN X)
   vector[N] y;    // CO2 flux (variate)

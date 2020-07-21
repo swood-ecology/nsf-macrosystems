@@ -7,7 +7,7 @@ data {
   // Measurement error in y
   vector[N] y_obs;            // CO2 flux (variate)
   vector[N] y_err;            // error in CO2 flux
-  // real<lower=0> sd_known;          // measurement noise
+  // real<lower=0> sd_known;          // single parameter of measurement noise
 
   // Measurement error in x
   vector[N] moistPlot_meas;    // initial gravimetric (quadrat moisture) (ALSO ADD MEASUREMENT ERROR IN X)
@@ -22,10 +22,10 @@ transformed data {
 }
 
 parameters {
-  // True measure of y
+  // True distribution of y
   vector[N] y; // unknown true value
   
-  // True measure of x
+  // True distribution of plot moisture
   vector[N] moistPlot;    // unknown true value
   real mu_moistPlot;    // prior location
   real sigma_moistPlot; // prior scale
@@ -55,7 +55,7 @@ model {
   // Measurement error in y
   y_obs ~ normal( y , y_err );
   
-  // Measurement error in x
+  // Measurement error in plot moisture
   moistPlot ~ normal(mu_moistPlot, sigma_moistPlot);
   moistPlot_meas ~ normal(moistPlot, tau);
   
