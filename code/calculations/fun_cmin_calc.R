@@ -3,6 +3,8 @@
 # output is a file with co2 flux per hour for each microcosm
 
 library(tidyverse)
+library(roxygen2)
+
 
 #' Calculate carbon mineralization
 #' 
@@ -19,19 +21,21 @@ library(tidyverse)
 cmin_calc_fun <- function(cmin, date){
   
   # Calculate standard values for all places with standards
+  
   not_any_na <- function(x) all(!is.na(x))
   
   cmin[is.na(cmin$std.value.1)==FALSE,] -> stds
-  stds %>% add_column(meanStandard='NA') -> stds
+  stds %>% add_column(meanStandard=NA_real_) -> stds
+  
   
   for(i in 1:nrow(stds)){
     bind_rows(
       stds[i,c("std.value.1","std.value.2","std.value.3","std.value.4")] %>%
         select_if(not_any_na) %>% gather()
     ) %>%
-      summarize(mean = mean(value)) -> stds[(i),'meanStandard']
+      dplyr::summarize(mean = mean(value)) -> stds[(i),'meanStandard']
   }
-
+  
   # calculate differences in standards by using slope method
   
   
@@ -39,18 +43,16 @@ cmin_calc_fun <- function(cmin, date){
   the.time <- numeric()
   the.slope <- numeric()
   
-  # corr_std[1] <- stds$meanStandard[1] # manually enter first standard value for the first sample
-  # 
-  # v.num <- 2
   
   v.num <- 1
   for(j in 2:length(stds$cmin.id)){
     
     for(i in 1:(stds$cmin.id[j] - stds$cmin.id[j-1])){
       # interpolate between two sets of standards
-      # standard integral + [(change in standards)/(change in time)]*(change in time between start of set to sample in set)
       
-      corr_std[v.num] <- as.numeric(stds$meanStandard[j]) +  
+      # previous (initial) standard + [(change between previous and current standard)/(change in time)]*(change in time between start of set to sample in set)
+      
+      corr_std[v.num] <- as.numeric(stds$meanStandard[j-1]) +  
         ((as.numeric(stds$meanStandard[j]) - as.numeric(stds$meanStandard[j-1])) / 
            as.numeric(difftime(as.POSIXct(stds$std.start.time[j], format = "%m/%d/%Y %H:%M"),
                                as.POSIXct(stds$std.start.time[j-1], format = "%m/%d/%Y %H:%M"), 
@@ -67,7 +69,7 @@ cmin_calc_fun <- function(cmin, date){
       the.slope[v.num] <- ((as.numeric(stds$meanStandard[j]) - as.numeric(stds$meanStandard[j-1])) / 
                              as.numeric(difftime(as.POSIXct(stds$std.start.time[j], format = "%m/%d/%Y %H:%M"),
                                                  as.POSIXct(stds$std.start.time[j-1], format = "%m/%d/%Y %H:%M"), 
-                                        units = "min")))
+                                                 units = "min")))
       v.num <- v.num + 1
     }
     
@@ -98,9 +100,9 @@ cmin_calc_fun <- function(cmin, date){
     ) %>% select(c(lab.id, unique.id, soil.volume, standard.co2, correctedStandard, the.time, the.slope,
                    irga.integral, incubationTime, CO2C, CO2CperHour)) -> cmin_calc 
   
-  setwd("mid_calcs")
+  setwd("calculated-data/")
   write.csv(cmin_calc, paste("irga_calc_", date, ".csv")) 
-  setwd("..")
+  setwd("../")
   cmin_calc %>% select(c(lab.id, unique.id, soil.volume, CO2CperHour)) -> cmin_calc
   
   return(cmin_calc)
